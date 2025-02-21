@@ -28,9 +28,9 @@
         };
         
         recognition.onresult = (event) => {
-            recordedText = event.results[0][0].transcript;
-            document.getElementById("status").innerText = "Çeviri yapılıyor...";
-            translateText(recordedText);
+            recordedText += event.results[0][0].transcript + " ";
+            localStorage.setItem("spokenText", recordedText);
+            document.getElementById("status").innerText = "Konuşmaya devam edebilirsiniz...";
         };
         
         recognition.onerror = () => {
@@ -43,6 +43,9 @@
     function stopRecording() {
         if (recognition) {
             recognition.stop();
+            recordedText = localStorage.getItem("spokenText") || "";
+            document.getElementById("status").innerText = "Çeviri yapılıyor...";
+            translateText(recordedText);
         }
     }
     
