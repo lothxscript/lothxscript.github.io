@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="tr">
+<!DOCTYPE html>
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +24,7 @@
             height: 100px;
             padding: 10px;
             margin-bottom: 10px;
+            font-size: 16px;
         }
         button {
             padding: 10px 20px;
@@ -43,107 +45,111 @@
         .dark-mode .container {
             background: #444;
         }
+        .font-size-slider {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Türkçe - Rusça Çeviri</h1>
         <textarea id="inputText" placeholder="Metni girin..."></textarea>
-        <button onclick="startSpeechRecognition()">🎤 Sesle Çevir</button>
         <button onclick="translateText()">Çevir</button>
         <button onclick="copyTranslation()">📋 Kopyala</button>
-        <button onclick="shareTranslation()">📤 Paylaş</button>
+        <button onclick="clearHistory()">Geçmişi Temizle</button>
         <h2>Çeviri:</h2>
         <p id="outputText"></p>
-        <button onclick="speakText()">🔊 Sesli Oynat</button>
-        <label for="speechRate">Konuşma Hızı:</label>
-        <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" onchange="setSpeechRate()">
-        <button onclick="toggleDarkMode()">🌙 Tema Değiştir</button>
         <h3>Çeviri Geçmişi</h3>
         <ul id="historyList"></ul>
-    </div><script>
-    let history = [];
-    let speechRate = 1;
-    let recognition;
-    
-    function startSpeechRecognition() {
-        if (!recognition) {
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = "tr-TR";
-            recognition.continuous = true;
+
+        <label for="fontSize">Metin Boyutu:</label>
+        <input type="range" id="fontSize" class="font-size-slider" min="14" max="30" value="16" onchange="changeFontSize()">
+
+        <button onclick="toggleDarkMode()">🌙 Tema Değiştir</button>
+
+        <label for="language">Dil Seçimi:</label>
+        <select id="language" onchange="changeLanguage()">
+            <option value="tr|ru">Türkçe - Rusça</option>
+            <option value="en|ru">İngilizce - Rusça</option>
+            <option value="de|ru">Almanca - Rusça</option>
+        </select>
+
+        <button onclick="exportHistory()">Geçmişi Dışa Aktar</button>
+    </div>
+
+    <script>
+        let history = [];
+        let currentLangPair = "tr|ru";
+        
+        function translateText() {
+            const text = document.getElementById("inputText").value;
+            if (!text.trim()) return;
+
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${currentLangPair}`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let translatedText = data.responseData.translatedText;
+                    if (!/[а-яА-Я]/.test(translatedText)) {
+                        translatedText = "⚠️ Hatalı çeviri algılandı. Lütfen tekrar deneyin.";
+                    }
+                    document.getElementById("outputText").innerText = translatedText;
+                    saveToHistory(text, translatedText);
+                })
+                .catch(() => {
+                    document.getElementById("outputText").innerText = "⚠️ Çeviri yapılırken hata oluştu.";
+                });
         }
-        
-        recognition.start();
-        
-        recognition.onresult = function(event) {
-            let transcript = document.getElementById("inputText").value;
-            if (transcript.length > 0) {
-                transcript += " "; // Önceki metin varsa bir boşluk ekleyerek devam et
-            }
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript + " ";
-            }
-            document.getElementById("inputText").value = transcript.trim();
+
+        function saveToHistory(original, translated) {
+            history.push({ original, translated });
+            const list = document.getElementById("historyList");
+            const listItem = document.createElement("li");
+            listItem.textContent = `${original} → ${translated}`;
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Sil";
+            deleteButton.onclick = () => {
+                history = history.filter(item => item.original !== original);
+                list.removeChild(listItem);
+            };
+            listItem.appendChild(deleteButton);
+            list.appendChild(listItem);
+        }
+
+        function clearHistory() {
+            history = [];
+            document.getElementById("historyList").innerHTML = "";
+        }
+
+        function copyTranslation() {
+            const text = document.getElementById("outputText").innerText;
+            navigator.clipboard.writeText(text);
+            alert("Çeviri kopyalandı!");
+        }
+
+        function changeFontSize() {
+            const fontSize = document.getElementById("fontSize").value;
+            document.getElementById("outputText").style.fontSize = `${fontSize}px`;
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+        }
+
+        function changeLanguage() {
+            const select = document.getElementById("language");
+            currentLangPair = select.value;
             translateText();
-        };
-    }
-    
-    async function translateText() {
-        const text = document.getElementById("inputText").value;
-        if (!text.trim()) return;
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
-        const response = await fetch(url);
-        const data = await response.json();
-        let translatedText = data.responseData.translatedText;
-        
-        if (!/[а-яА-Я]/.test(translatedText)) {
-            translatedText = "⚠️ Hatalı çeviri algılandı. Lütfen tekrar deneyin.";
         }
-        
-        document.getElementById("outputText").innerText = translatedText;
-        saveToHistory(text, translatedText);
-    }
-    
-    function speakText() {
-        const text = document.getElementById("outputText").innerText;
-        if (text.includes("⚠️")) return;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "ru-RU";
-        utterance.rate = speechRate;
-        speechSynthesis.speak(utterance);
-    }
-    
-    function setSpeechRate() {
-        speechRate = document.getElementById("speechRate").value;
-    }
 
-    function toggleDarkMode() {
-        document.body.classList.toggle("dark-mode");
-    }
-    
-    function copyTranslation() {
-        const text = document.getElementById("outputText").innerText;
-        navigator.clipboard.writeText(text);
-        alert("Çeviri kopyalandı!");
-    }
-    
-    function shareTranslation() {
-        const text = document.getElementById("outputText").innerText;
-        if (navigator.share) {
-            navigator.share({ text: text });
-        } else {
-            alert("Paylaşım desteği bulunmuyor.");
+        function exportHistory() {
+            const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ceviri_gecmisi.json';
+            a.click();
         }
-    }
-    
-    function saveToHistory(original, translated) {
-        history.push({ original, translated });
-        const list = document.getElementById("historyList");
-        const listItem = document.createElement("li");
-        listItem.textContent = `${original} → ${translated}`;
-        list.appendChild(listItem);
-    }
-</script>
-
+    </script>
 </body>
 </html>
