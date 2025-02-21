@@ -1,19 +1,20 @@
+let recognition;
 let recognizedText = ""; // Kullanıcının konuştuğu metni saklamak için
 
-// 1. Kullanıcının konuşmasını tanıma
-function recognizeSpeech() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+// 1. Kullanıcının konuşmasını tanıma başlat
+function startRecognition() {
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = "tr-TR"; // Türkçe giriş
 
-    recognition.start();
     document.getElementById("output").innerText = "Dinleniyor...";
+    document.getElementById("startButton").style.display = "none";
+    document.getElementById("stopButton").style.display = "inline-block";
+
+    recognition.start();
 
     recognition.onresult = function (event) {
         recognizedText = event.results[0][0].transcript;
         document.getElementById("output").innerText = "Söylenen: " + recognizedText;
-
-        // Çeviri butonunu görünür yap
-        document.getElementById("convertButton").style.display = "inline-block";
     };
 
     recognition.onerror = function (event) {
@@ -21,14 +22,23 @@ function recognizeSpeech() {
     };
 }
 
-// 2. MyMemory API ile çeviri yapma
+// 2. Konuşmayı durdur ve onay al
+function stopRecognition() {
+    if (recognition) {
+        recognition.stop();
+        document.getElementById("stopButton").style.display = "none";
+        document.getElementById("convertButton").style.display = "inline-block";
+    }
+}
+
+// 3. MyMemory API ile çeviri yapma (Türkçeden İtalyancaya)
 async function translateText() {
     if (!recognizedText) {
         document.getElementById("output").innerText = "Önce konuşmayı başlatmalısınız!";
         return;
     }
 
-    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(recognizedText)}&langpair=tr|ru`;
+    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(recognizedText)}&langpair=tr|it`;
 
     try {
         let response = await fetch(url);
@@ -36,14 +46,14 @@ async function translateText() {
         let translatedText = data.responseData.translatedText;
         document.getElementById("output").innerText = "Çeviri: " + translatedText;
 
-        speakText(translatedText, "ru-RU");
+        speakText(translatedText, "it-IT");
     } catch (error) {
         console.error("Çeviri hatası:", error);
         document.getElementById("output").innerText = "Çeviri başarısız.";
     }
 }
 
-// 3. Çevrilen metni sesli okuma
+// 4. Çevrilen metni sesli okuma (İtalyanca)
 function speakText(text, lang) {
     let utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
@@ -56,5 +66,6 @@ window.onerror = function (message, source, lineno, colno, error) {
 };
 
 // Buton olayları
-document.getElementById("translateButton").addEventListener("click", recognizeSpeech);
+document.getElementById("startButton").addEventListener("click", startRecognition);
+document.getElementById("stopButton").addEventListener("click", stopRecognition);
 document.getElementById("convertButton").addEventListener("click", translateText);
