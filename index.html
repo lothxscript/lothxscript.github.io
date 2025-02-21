@@ -1,21 +1,73 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sesli Çeviri (İtalyanca)</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Türkçeden Rusçaya Çeviri</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        button { margin: 10px; padding: 10px; font-size: 16px; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Sesli Çeviri</h1>
-        <p>Türkçe konuş, İtalyancaya çevrilsin ve sesli okunsun.</p>
-        <button id="startButton">🎤 Konuşmaya Başla</button>
-        <button id="stopButton" style="display: none;">🛑 Konuşmayı Bitir</button>
-        <button id="convertButton" style="display: none;">🔄 Çevir ve Seslendir</button>
-        <p id="output"></p>
-    </div>
+    <h1>Türkçeden Rusçaya Sesli Çeviri</h1>
+    <button onclick="startRecording()">Konuşmayı Başlat</button>
+    <button onclick="stopRecording()">Bitir</button>
+    <p id="status">Hazır</p>
+    <p id="translatedText"></p><script>
+    let recognition;
+    let recordedText = "";
+    
+    function startRecording() {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "tr-TR";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        
+        recognition.onstart = () => {
+            document.getElementById("status").innerText = "Dinleniyor...";
+        };
+        
+        recognition.onresult = (event) => {
+            recordedText = event.results[0][0].transcript;
+            document.getElementById("status").innerText = "Çeviri yapılıyor...";
+            translateText(recordedText);
+        };
+        
+        recognition.onerror = () => {
+            document.getElementById("status").innerText = "Bir hata oluştu";
+        };
+        
+        recognition.start();
+    }
+    
+    function stopRecording() {
+        if (recognition) {
+            recognition.stop();
+        }
+    }
+    
+    function translateText(text) {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const translated = data.responseData.translatedText;
+                document.getElementById("translatedText").innerText = translated;
+                speakText(translated);
+            })
+            .catch(() => {
+                document.getElementById("status").innerText = "Çeviri başarısız";
+            });
+    }
+    
+    function speakText(text) {
+        const speech = new SpeechSynthesisUtterance(text);
+        speech.lang = "ru-RU";
+        speechSynthesis.speak(speech);
+        document.getElementById("status").innerText = "Seslendiriliyor...";
+    }
+</script>
 
-    <script src="script.js"></script>
 </body>
 </html>
