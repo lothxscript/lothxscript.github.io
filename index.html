@@ -78,16 +78,24 @@
     
     async function translateText() {
         const text = document.getElementById("inputText").value;
+        if (!text.trim()) return;
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
         const response = await fetch(url);
         const data = await response.json();
-        const translatedText = data.responseData.translatedText;
+        let translatedText = data.responseData.translatedText;
+        
+        // Yanlış çeviriyi kontrol et
+        if (!/[а-яА-Я]/.test(translatedText)) {
+            translatedText = "⚠️ Hatalı çeviri algılandı. Lütfen tekrar deneyin.";
+        }
+        
         document.getElementById("outputText").innerText = translatedText;
         saveToHistory(text, translatedText);
     }
     
     function speakText() {
         const text = document.getElementById("outputText").innerText;
+        if (text.includes("⚠️")) return; // Hatalı çeviriyi seslendirme
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "ru-RU";
         utterance.rate = speechRate;
