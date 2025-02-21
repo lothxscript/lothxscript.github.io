@@ -1,19 +1,24 @@
 let recognition;
-let recognizedText = ""; // Kullanıcının konuştuğu metni saklamak için
+let recognizedText = ""; // Kullanıcının konuştuğu tüm metni saklamak için
 
-// 1. Kullanıcının konuşmasını tanıma başlat
+// 1. Kullanıcının konuşmasını tanıma başlat (kesintisiz dinleme)
 function startRecognition() {
     recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = "tr-TR"; // Türkçe giriş
+    recognition.continuous = true; // Kesintisiz dinleme modu
+    recognition.interimResults = false; // Geçici sonuçları gösterme
 
     document.getElementById("output").innerText = "Dinleniyor...";
     document.getElementById("startButton").style.display = "none";
     document.getElementById("stopButton").style.display = "inline-block";
 
+    recognizedText = ""; // Önceki konuşmayı sıfırla
     recognition.start();
 
     recognition.onresult = function (event) {
-        recognizedText = event.results[0][0].transcript;
+        for (let i = 0; i < event.results.length; i++) {
+            recognizedText += event.results[i][0].transcript + " "; // Yeni gelen her cümleyi ekle
+        }
         document.getElementById("output").innerText = "Söylenen: " + recognizedText;
     };
 
@@ -22,7 +27,7 @@ function startRecognition() {
     };
 }
 
-// 2. Konuşmayı durdur ve onay al
+// 2. Konuşmayı durdur ve çeviri butonunu aktif et
 function stopRecognition() {
     if (recognition) {
         recognition.stop();
@@ -33,7 +38,7 @@ function stopRecognition() {
 
 // 3. MyMemory API ile çeviri yapma (Türkçeden Fransızcaya)
 async function translateText() {
-    if (!recognizedText) {
+    if (!recognizedText.trim()) {
         document.getElementById("output").innerText = "Önce konuşmayı başlatmalısınız!";
         return;
     }
