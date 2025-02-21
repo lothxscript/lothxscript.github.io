@@ -64,14 +64,23 @@
     </div><script>
     let history = [];
     let speechRate = 1;
-
+    let recognition;
+    
     function startSpeechRecognition() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "tr-TR";
+        if (!recognition) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "tr-TR";
+            recognition.continuous = true;
+        }
+        
         recognition.start();
         
         recognition.onresult = function(event) {
-            document.getElementById("inputText").value = event.results[0][0].transcript;
+            let transcript = document.getElementById("inputText").value;
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript + " ";
+            }
+            document.getElementById("inputText").value = transcript.trim();
             translateText();
         };
     }
@@ -84,7 +93,6 @@
         const data = await response.json();
         let translatedText = data.responseData.translatedText;
         
-        // Yanlış çeviriyi kontrol et
         if (!/[а-яА-Я]/.test(translatedText)) {
             translatedText = "⚠️ Hatalı çeviri algılandı. Lütfen tekrar deneyin.";
         }
@@ -95,7 +103,7 @@
     
     function speakText() {
         const text = document.getElementById("outputText").innerText;
-        if (text.includes("⚠️")) return; // Hatalı çeviriyi seslendirme
+        if (text.includes("⚠️")) return;
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "ru-RU";
         utterance.rate = speechRate;
