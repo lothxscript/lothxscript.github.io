@@ -1,85 +1,91 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Türkçeden Rusçaya Çeviri</title>
+    <title>Türkçe - Rusça Çeviri</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        button { margin: 10px; padding: 10px; font-size: 16px; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: #007BFF;
+            color: white;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .dark-mode {
+            background-color: #333;
+            color: white;
+        }
+        .dark-mode .container {
+            background: #444;
+        }
     </style>
 </head>
 <body>
-    <h1>Türkçeden Rusçaya Sesli Çeviri</h1>
-    <button onclick="startRecording()">Konuşmayı Başlat</button>
-    <button onclick="manualStopRecording()">Bitirme Komutunu Ver</button>
-    <p id="status">Hazır</p>
-    <p id="translatedText"></p>
-
-    <script>
-        let recognition;
-        let recordedText = "";
-        let isRecording = false;
-
-        function startRecording() {
-            if (isRecording) return;
-            isRecording = true;
-
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = "tr-TR";
-            recognition.continuous = true;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                document.getElementById("status").innerText = "Dinleniyor...";
-            };
-
-            recognition.onresult = (event) => {
-                recordedText += event.results[event.results.length - 1][0].transcript + " ";
-                localStorage.setItem("spokenText", recordedText);
-                document.getElementById("status").innerText = "Konuşmaya devam edebilirsiniz...";
-            };
-
-            recognition.onerror = () => {
-                document.getElementById("status").innerText = "Bir hata oluştu";
-            };
-
-            recognition.start();
-        }
-
-        function manualStopRecording() {
-            if (!isRecording) return;
-            isRecording = false;
-            if (recognition) {
-                recognition.stop();
-                recordedText = localStorage.getItem("spokenText") || "";
-                document.getElementById("status").innerText = "Çeviri yapılıyor...";
-                translateText(recordedText);
-            }
-        }
-
-        function translateText(text) {
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
-
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const translated = data.responseData.translatedText;
-                    document.getElementById("translatedText").innerText = translated;
-                    speakText(translated);
-                })
-                .catch(() => {
-                    document.getElementById("status").innerText = "Çeviri başarısız";
-                });
-        }
-
-        function speakText(text) {
-            const speech = new SpeechSynthesisUtterance(text);
-            speech.lang = "ru-RU";
-            speechSynthesis.speak(speech);
-            document.getElementById("status").innerText = "Seslendiriliyor...";
-        }
-    </script>
+    <div class="container">
+        <h1>Türkçe - Rusça Çeviri</h1>
+        <textarea id="inputText" placeholder="Metni girin..."></textarea>
+        <button onclick="startSpeechRecognition()">🎤 Sesle Çevir</button>
+        <button onclick="translateText()">Çevir</button>
+        <h2>Çeviri:</h2>
+        <p id="outputText"></p>
+        <button onclick="speakText()">🔊 Sesli Oynat</button>
+        <button onclick="toggleDarkMode()">🌙 Tema Değiştir</button>
+    </div><script>
+    function startSpeechRecognition() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "tr-TR";
+        recognition.start();
+        
+        recognition.onresult = function(event) {
+            document.getElementById("inputText").value = event.results[0][0].transcript;
+            translateText();
+        };
+    }
+    
+    async function translateText() {
+        const text = document.getElementById("inputText").value;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
+        const response = await fetch(url);
+        const data = await response.json();
+        document.getElementById("outputText").innerText = data.responseData.translatedText;
+    }
+    
+    function speakText() {
+        const text = document.getElementById("outputText").innerText;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "ru-RU";
+        speechSynthesis.speak(utterance);
+    }
+    
+    function toggleDarkMode() {
+        document.body.classList.toggle("dark-mode");
+    }
+</script>
 
 </body>
 </html>
