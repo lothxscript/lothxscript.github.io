@@ -38,3 +38,7 @@ function speakText(text, lang) {
 
 // Butona tıklayınca konuşmayı başlat
 document.getElementById("translateButton").addEventListener("click", recognizeSpeech);
+
+window.onerror = function (message, source, lineno, colno, error) {
+    document.getElementById("output").innerText = `Hata: ${message} \nSatır: ${lineno}, Sütun: ${colno}`;
+};
