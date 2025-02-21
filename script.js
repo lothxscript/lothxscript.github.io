@@ -31,14 +31,14 @@ function stopRecognition() {
     }
 }
 
-// 3. MyMemory API ile çeviri yapma (Türkçeden İtalyancaya)
+// 3. MyMemory API ile çeviri yapma (Türkçeden Fransızcaya)
 async function translateText() {
     if (!recognizedText) {
         document.getElementById("output").innerText = "Önce konuşmayı başlatmalısınız!";
         return;
     }
 
-    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(recognizedText)}&langpair=tr|it`;
+    let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(recognizedText)}&langpair=tr|fr`;
 
     try {
         let response = await fetch(url);
@@ -46,14 +46,14 @@ async function translateText() {
         let translatedText = data.responseData.translatedText;
         document.getElementById("output").innerText = "Çeviri: " + translatedText;
 
-        speakText(translatedText, "it-IT");
+        speakText(translatedText, "fr-FR");
     } catch (error) {
         console.error("Çeviri hatası:", error);
         document.getElementById("output").innerText = "Çeviri başarısız.";
     }
 }
 
-// 4. Çevrilen metni sesli okuma (İtalyanca)
+// 4. Çevrilen metni sesli okuma (Fransızca)
 function speakText(text, lang) {
     let utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang;
