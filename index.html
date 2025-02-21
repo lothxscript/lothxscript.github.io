@@ -51,11 +51,20 @@
         <textarea id="inputText" placeholder="Metni girin..."></textarea>
         <button onclick="startSpeechRecognition()">🎤 Sesle Çevir</button>
         <button onclick="translateText()">Çevir</button>
+        <button onclick="copyTranslation()">📋 Kopyala</button>
+        <button onclick="shareTranslation()">📤 Paylaş</button>
         <h2>Çeviri:</h2>
         <p id="outputText"></p>
         <button onclick="speakText()">🔊 Sesli Oynat</button>
+        <label for="speechRate">Konuşma Hızı:</label>
+        <input type="range" id="speechRate" min="0.5" max="2" step="0.1" value="1" onchange="setSpeechRate()">
         <button onclick="toggleDarkMode()">🌙 Tema Değiştir</button>
+        <h3>Çeviri Geçmişi</h3>
+        <ul id="historyList"></ul>
     </div><script>
+    let history = [];
+    let speechRate = 1;
+
     function startSpeechRecognition() {
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "tr-TR";
@@ -72,18 +81,48 @@
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=tr|ru`;
         const response = await fetch(url);
         const data = await response.json();
-        document.getElementById("outputText").innerText = data.responseData.translatedText;
+        const translatedText = data.responseData.translatedText;
+        document.getElementById("outputText").innerText = translatedText;
+        saveToHistory(text, translatedText);
     }
     
     function speakText() {
         const text = document.getElementById("outputText").innerText;
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "ru-RU";
+        utterance.rate = speechRate;
         speechSynthesis.speak(utterance);
     }
     
+    function setSpeechRate() {
+        speechRate = document.getElementById("speechRate").value;
+    }
+
     function toggleDarkMode() {
         document.body.classList.toggle("dark-mode");
+    }
+    
+    function copyTranslation() {
+        const text = document.getElementById("outputText").innerText;
+        navigator.clipboard.writeText(text);
+        alert("Çeviri kopyalandı!");
+    }
+    
+    function shareTranslation() {
+        const text = document.getElementById("outputText").innerText;
+        if (navigator.share) {
+            navigator.share({ text: text });
+        } else {
+            alert("Paylaşım desteği bulunmuyor.");
+        }
+    }
+    
+    function saveToHistory(original, translated) {
+        history.push({ original, translated });
+        const list = document.getElementById("historyList");
+        const listItem = document.createElement("li");
+        listItem.textContent = `${original} → ${translated}`;
+        list.appendChild(listItem);
     }
 </script>
 
