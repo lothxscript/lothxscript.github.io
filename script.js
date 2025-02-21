@@ -1,11 +1,14 @@
 let recognition;
-let recognizedText = ""; // Kullanıcının konuştuğu tüm metni saklamak için
+let recognizedText = "";
+let isListening = false; // Konuşma aktif mi?
 
-// 1. Kullanıcının konuşmasını tanıma başlat (kesintisiz dinleme)
+// 1. Kullanıcının konuşmasını başlat
 function startRecognition() {
+    if (isListening) return; // Eğer zaten dinliyorsa tekrar başlatma
+
     recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = "tr-TR"; // Türkçe giriş
-    recognition.continuous = true; // Kesintisiz dinleme modu
+    recognition.continuous = true; // Kesintisiz dinleme
     recognition.interimResults = false; // Geçici sonuçları gösterme
 
     document.getElementById("output").innerText = "Dinleniyor...";
@@ -13,11 +16,13 @@ function startRecognition() {
     document.getElementById("stopButton").style.display = "inline-block";
 
     recognizedText = ""; // Önceki konuşmayı sıfırla
+    isListening = true; // Dinleme moduna geç
+
     recognition.start();
 
     recognition.onresult = function (event) {
         for (let i = 0; i < event.results.length; i++) {
-            recognizedText += event.results[i][0].transcript + " "; // Yeni gelen her cümleyi ekle
+            recognizedText += event.results[i][0].transcript + " "; // Her yeni cümleyi ekle
         }
         document.getElementById("output").innerText = "Söylenen: " + recognizedText;
     };
@@ -25,15 +30,20 @@ function startRecognition() {
     recognition.onerror = function (event) {
         document.getElementById("output").innerText = "Hata: " + event.error;
     };
+
+    recognition.onend = function () {
+        if (isListening) recognition.start(); // Kullanıcı dur demedikçe tekrar başlat
+    };
 }
 
-// 2. Konuşmayı durdur ve çeviri butonunu aktif et
+// 2. Kullanıcı konuşmayı durdurmak istediğinde çağrılır
 function stopRecognition() {
+    isListening = false; // Dinlemeyi kapat
     if (recognition) {
         recognition.stop();
-        document.getElementById("stopButton").style.display = "none";
-        document.getElementById("convertButton").style.display = "inline-block";
     }
+    document.getElementById("stopButton").style.display = "none";
+    document.getElementById("convertButton").style.display = "inline-block";
 }
 
 // 3. MyMemory API ile çeviri yapma (Türkçeden Fransızcaya)
