@@ -86,18 +86,23 @@
             if (!text.trim()) return;
 
             const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${currentLangPair}`;
+            
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    let translatedText = data.responseData.translatedText;
-                    if (!/[а-яА-Я]/.test(translatedText)) {
-                        translatedText = "⚠️ Hatalı çeviri algılandı. Lütfen tekrar deneyin.";
+                    if (data.responseStatus !== 200) {
+                        console.error("Çeviri Hatası:", data);
+                        document.getElementById("outputText").innerText = `⚠️ Hata: ${data.responseDetails || "Bilinmeyen hata"}`;
+                        return;
                     }
+
+                    let translatedText = data.responseData.translatedText;
                     document.getElementById("outputText").innerText = translatedText;
                     saveToHistory(text, translatedText);
                 })
-                .catch(() => {
-                    document.getElementById("outputText").innerText = "⚠️ Çeviri yapılırken hata oluştu.";
+                .catch(error => {
+                    console.error("Çeviri API Hatası:", error);
+                    document.getElementById("outputText").innerText = `⚠️ Hata: ${error.message || "Bilinmeyen hata"}`;
                 });
         }
 
