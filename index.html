@@ -1,160 +1,58 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Türkçe - Rusça Çeviri</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
-            transition: background 0.3s, color 0.3s;
-        }
-        .container {
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
-            background: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            background: #007BFF;
-            color: white;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        .dark-mode {
-            background-color: #333;
-            color: white;
-        }
-        .dark-mode .container {
-            background: #444;
-        }
-        .font-size-slider {
-            width: 100%;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Optik Form Tarayıcı</title>
+  <style>
+    body {
+      font-family: Arial;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+    video, canvas {
+      border: 2px solid #333;
+      border-radius: 8px;
+      margin: 10px 0;
+      max-width: 90%;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Türkçe - Rusça Çeviri</h1>
-        <textarea id="inputText" placeholder="Metni girin..."></textarea>
-        <button onclick="translateText()">Çevir</button>
-        <button onclick="copyTranslation()">📋 Kopyala</button>
-        <button onclick="clearHistory()">Geçmişi Temizle</button>
-        <h2>Çeviri:</h2>
-        <p id="outputText"></p>
-        <h3>Çeviri Geçmişi</h3>
-        <ul id="historyList"></ul>
+  <h2>Optik Form Tarayıcı</h2>
+  <video id="video" autoplay></video>
+  <button onclick="capture()">Fotoğraf Çek</button>
+  <canvas id="canvas" width="640" height="480"></canvas>
 
-        <label for="fontSize">Metin Boyutu:</label>
-        <input type="range" id="fontSize" class="font-size-slider" min="14" max="30" value="16" onchange="changeFontSize()">
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
 
-        <button onclick="toggleDarkMode()">🌙 Tema Değiştir</button>
+    // Kamerayı başlat
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => {
+        video.srcObject = stream;
+      })
+      .catch((err) => {
+        console.error("Kamera erişimi reddedildi:", err);
+      });
 
-        <label for="language">Dil Seçimi:</label>
-        <select id="language" onchange="changeLanguage()">
-            <option value="tr|ru">Türkçe - Rusça</option>
-            <option value="en|ru">İngilizce - Rusça</option>
-            <option value="de|ru">Almanca - Rusça</option>
-        </select>
-
-        <button onclick="exportHistory()">Geçmişi Dışa Aktar</button>
-    </div>
-
-    <script>
-        let history = [];
-        let currentLangPair = "tr|ru";
-        
-        function translateText() {
-            const text = document.getElementById("inputText").value;
-            if (!text.trim()) return;
-
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${currentLangPair}`;
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.responseStatus !== 200) {
-                        console.error("Çeviri Hatası:", data);
-                        document.getElementById("outputText").innerText = `⚠️ Hata: ${data.responseDetails || "Bilinmeyen hata"}`;
-                        return;
-                    }
-
-                    let translatedText = data.responseData.translatedText;
-                    document.getElementById("outputText").innerText = translatedText;
-                    saveToHistory(text, translatedText);
-                })
-                .catch(error => {
-                    console.error("Çeviri API Hatası:", error);
-                    document.getElementById("outputText").innerText = `⚠️ Hata: ${error.message || "Bilinmeyen hata"}`;
-                });
-        }
-
-        function saveToHistory(original, translated) {
-            history.push({ original, translated });
-            const list = document.getElementById("historyList");
-            const listItem = document.createElement("li");
-            listItem.textContent = `${original} → ${translated}`;
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "Sil";
-            deleteButton.onclick = () => {
-                history = history.filter(item => item.original !== original);
-                list.removeChild(listItem);
-            };
-            listItem.appendChild(deleteButton);
-            list.appendChild(listItem);
-        }
-
-        function clearHistory() {
-            history = [];
-            document.getElementById("historyList").innerHTML = "";
-        }
-
-        function copyTranslation() {
-            const text = document.getElementById("outputText").innerText;
-            navigator.clipboard.writeText(text);
-            alert("Çeviri kopyalandı!");
-        }
-
-        function changeFontSize() {
-            const fontSize = document.getElementById("fontSize").value;
-            document.getElementById("outputText").style.fontSize = `${fontSize}px`;
-        }
-
-        function toggleDarkMode() {
-            document.body.classList.toggle("dark-mode");
-        }
-
-        function changeLanguage() {
-            const select = document.getElementById("language");
-            currentLangPair = select.value;
-            translateText();
-        }
-
-        function exportHistory() {
-            const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ceviri_gecmisi.json';
-            a.click();
-        }
-    </script>
+    // Fotoğraf çek
+    function capture() {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Fotoğraf verisi burada: canvas.toDataURL()
+    }
+  </script>
 </body>
 </html>
