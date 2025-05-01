@@ -1,58 +1,66 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Optik Form Tarayıcı</title>
+  <meta charset="UTF-8">
+  <title>Auto Subtitles</title>
   <style>
-    body {
-      font-family: Arial;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 20px;
-    }
-    video, canvas {
-      border: 2px solid #333;
-      border-radius: 8px;
-      margin: 10px 0;
-      max-width: 90%;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    video { width: 80%; margin-bottom: 10px; }
+    #subtitles { font-size: 20px; background: #000; color: #fff; padding: 10px; }
   </style>
 </head>
 <body>
-  <h2>Optik Form Tarayıcı</h2>
-  <video id="video" autoplay></video>
-  <button onclick="capture()">Fotoğraf Çek</button>
-  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <h1>Auto Subtitle Generator</h1>
+  <input type="file" accept="video/*" id="videoInput"><br><br>
+  <video id="video" controls></video>
+  <div id="subtitles">Subtitles will appear here...</div>
 
   <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const context = canvas.getContext('2d');
+    const videoInput = document.getElementById('videoInput');
+    const subtitleBox = document.getElementById('subtitles');
 
-    // Kamerayı başlat
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then((stream) => {
-        video.srcObject = stream;
-      })
-      .catch((err) => {
-        console.error("Kamera erişimi reddedildi:", err);
-      });
+    // Load selected video
+    videoInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        video.src = URL.createObjectURL(file);
+      }
+    });
 
-    // Fotoğraf çek
-    function capture() {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      // Fotoğraf verisi burada: canvas.toDataURL()
+    // Web Speech API for live subtitles (microphone-based)
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (window.SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('');
+        subtitleBox.textContent = transcript;
+      };
+
+      recognition.onerror = (e) => {
+        console.error('Speech recognition error:', e);
+      };
+
+      video.onplay = () => {
+        recognition.start();  // starts listening from mic
+      };
+
+      video.onpause = () => {
+        recognition.stop();
+      };
+
+    } else {
+      subtitleBox.textContent = 'Speech Recognition is not supported in this browser.';
     }
   </script>
+
 </body>
 </html>
